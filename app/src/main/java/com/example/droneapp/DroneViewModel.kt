@@ -6,6 +6,12 @@ import androidx.lifecycle.ViewModel
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import kotlinx.coroutines.Dispatchers
 
 data class Drone(
     val id: String,
@@ -19,13 +25,61 @@ data class Drone(
 
 class DroneViewModel : ViewModel() {
 
-    private val _drones = mutableStateOf<List<Drone>>(listOf(
-        Drone(id = "1", name = "Drone 1", model = "Model A", location = "București", coordinates = LatLng(44.4268, 26.1025), speed = 10f),
-        Drone(id = "2", name = "Drone 2", model = "Model B", location = "Cluj-Napoca", coordinates = LatLng(46.7712, 23.6236), speed = 12f),
-        Drone(id = "3", name = "Drone 3", model = "Model C", location = "Timișoara", coordinates = LatLng(45.7489, 21.2087), speed = 8f)
-    ))
-
+    private val _drones = mutableStateOf<List<Drone>>(emptyList())
     val drones: State<List<Drone>> = _drones
+
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("http://192.168.1.141:5000/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    private val api = retrofit.create(ApiService::class.java)
+
+    fun fetchDrones() {
+        println("fetch")
+        viewModelScope.launch(Dispatchers.IO) {
+            api.getDrones().enqueue(object : Callback<List<ApiResponse>> {
+                override fun onResponse(call: Call<List<ApiResponse>>, response: Response<List<ApiResponse>>) {
+                    if (response.isSuccessful) {
+                        val apiResponse = response.body() ?: emptyList()
+                        _drones.value = apiResponse.map { apiDrone ->
+                            Drone(
+                                id = apiDrone.id,
+                                name = apiDrone.name,
+                                model = apiDrone.model,
+                                location = apiDrone.location,
+                                coordinates = LatLng(apiDrone.coordinates.lat, apiDrone.coordinates.lng),
+                                speed = apiDrone.speed,
+                                destination = apiDrone.destination?.let { LatLng(it.lat, it.lng) }
+                            )
+                        }
+                    } else {
+                        println("Failed to fetch drones: ${response.errorBody()?.string()}")
+                    }
+                }
+
+                override fun onFailure(call: Call<List<ApiResponse>>, t: Throwable) {
+                    println("API call failed: ${t.message}")
+                }
+            })
+        }
+    }
+
+    private fun updateDroneOnServer(updatedDrone: Drone) {
+        api.updateDrone(updatedDrone.id, updatedDrone).enqueue(object : Callback<Drone> {
+            override fun onResponse(call: Call<Drone>, response: Response<Drone>) {
+                if (response.isSuccessful) {
+                    println("Drone updated successfully: ${response.body()}")
+                } else {
+                    println("Failed to update drone: ${response.message()}")
+                }
+            }
+
+            override fun onFailure(call: Call<Drone>, t: Throwable) {
+                println("Error updating drone: ${t.message}")
+            }
+        })
+    }
 
     fun updateDronePosition(updatedDrone: Drone) {
         _drones.value = _drones.value.map {
@@ -34,9 +88,13 @@ class DroneViewModel : ViewModel() {
     }
 
     fun setDestination(drone: Drone, destination: LatLng) {
-        println("so.")
         _drones.value = _drones.value.map {
-            if (it.id == drone.id) it.copy(destination = destination) else it
+            if (it.id == drone.id) {
+                val updatedDrone = it.copy(destination = destination)
+                updatedDrone
+            } else {
+                it
+            }
         }
     }
 
@@ -54,7 +112,6 @@ class DroneViewModel : ViewModel() {
         if (distance[0] < 10) {
             return drone.copy(destination = null)
         } else {
-
             val moveRatio = drone.speed / distance[0]
             val newLat = currentPos.latitude + (destination.latitude - currentPos.latitude) * moveRatio
             val newLng = currentPos.longitude + (destination.longitude - currentPos.longitude) * moveRatio
@@ -64,7 +121,11 @@ class DroneViewModel : ViewModel() {
 
     fun updateAllDrones() {
         _drones.value = _drones.value.map { drone ->
-            moveDrone(drone)
+            val updatedDrone = moveDrone(drone)
+
+            updateDroneOnServer(updatedDrone)
+
+            updatedDrone
         }
     }
 }

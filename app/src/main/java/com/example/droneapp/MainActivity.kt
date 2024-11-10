@@ -62,7 +62,6 @@ fun NavLogic() {
             SetDestinationScreen(drones = droneViewModel.drones.value) { drone, destination ->
                 droneViewModel.setDestination(drone, destination)
                 navController.popBackStack()
-                println("asa mai mege")
             }
         }
         composable("text1") { SimpleTextScreen("Acesta este ecranul 1") }
@@ -119,10 +118,11 @@ fun MapScreen(drones: List<Drone>, droneViewModel: DroneViewModel) {
     }
 
     LaunchedEffect(Unit) {
+        droneViewModel.fetchDrones()
         while (true) {
             delay(3000)
             droneViewModel.updateAllDrones()
-            println("Debug check")
+            println("3s Debug check")
         }
     }
 }
@@ -152,7 +152,7 @@ fun SetDestinationScreen(drones: List<Drone>, onSetDestination: (Drone, LatLng) 
             Button(
                 onClick = {
                     onSetDestination(drone, destination.value)
-                    println("Da")
+                    println("onClick check: ${drone.name}, ${destination.value}")
                 },
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
             ) {

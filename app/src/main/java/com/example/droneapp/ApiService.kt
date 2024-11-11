@@ -13,6 +13,6 @@ interface ApiService {
     @PUT("drones/{id}")
     fun updateDrone(
         @Path("id") droneId: String,
-        @Body drone: Drone
-    ): Call<Drone>
+        @Body drone: ApiResponse
+    ): Call<ApiResponse>
 }

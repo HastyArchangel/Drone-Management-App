@@ -36,23 +36,14 @@ class DroneViewModel : ViewModel() {
     private val api = retrofit.create(ApiService::class.java)
 
     fun fetchDrones() {
-        println("fetch")
+        println("Fetching drones...")
         viewModelScope.launch(Dispatchers.IO) {
             api.getDrones().enqueue(object : Callback<List<ApiResponse>> {
                 override fun onResponse(call: Call<List<ApiResponse>>, response: Response<List<ApiResponse>>) {
                     if (response.isSuccessful) {
-                        val apiResponse = response.body() ?: emptyList()
-                        _drones.value = apiResponse.map { apiDrone ->
-                            Drone(
-                                id = apiDrone.id,
-                                name = apiDrone.name,
-                                model = apiDrone.model,
-                                location = apiDrone.location,
-                                coordinates = LatLng(apiDrone.coordinates.lat, apiDrone.coordinates.lng),
-                                speed = apiDrone.speed,
-                                destination = apiDrone.destination?.let { LatLng(it.lat, it.lng) }
-                            )
-                        }
+                        _drones.value = response.body()?.map { apiResponse ->
+                            apiResponse.toDrone()  // or mapApiResponseToDrone(apiResponse)
+                        } ?: emptyList()
                     } else {
                         println("Failed to fetch drones: ${response.errorBody()?.string()}")
                     }
@@ -69,16 +60,20 @@ class DroneViewModel : ViewModel() {
     fun setDestination(drone: Drone, destination: LatLng) {
         val updatedDrone = drone.copy(destination = destination)
 
-        api.updateDrone(updatedDrone.id, updatedDrone).enqueue(object : Callback<Drone> {
-            override fun onResponse(call: Call<Drone>, response: Response<Drone>) {
+        val apiResponseDrone = updatedDrone.toApiResponse()
+
+        api.updateDrone(updatedDrone.id, apiResponseDrone).enqueue(object : Callback<ApiResponse> {
+            override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
                 if (response.isSuccessful) {
-                    println("Drone updated successfully: ${response.body()}")
+
+                    val updatedDroneFromApi = response.body()?.toDrone()
+                    println("Drone updated successfully: $updatedDroneFromApi")
                 } else {
                     println("Failed to update drone: ${response.message()}")
                 }
             }
 
-            override fun onFailure(call: Call<Drone>, t: Throwable) {
+            override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
                 println("Error updating drone: ${t.message}")
             }
         })

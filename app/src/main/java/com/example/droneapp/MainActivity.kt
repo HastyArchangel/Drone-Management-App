@@ -2,6 +2,15 @@ package com.example.droneapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -34,6 +44,12 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.Image
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+
 
 
 class MainActivity : ComponentActivity() {
@@ -69,51 +85,118 @@ fun NavLogic() {
     }
 }
 
-
 @Composable
 fun ButtonScreen(navController: NavHostController) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        Button(onClick = { navController.navigate("map") }) {
-            Text("Vezi Harta")
+        Image(
+            painter = painterResource(id = R.drawable.background_image),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            AnimatedButton(
+                isVisible = true,
+                onClick = { navController.navigate("map") },
+                text = "Vezi Harta",
+                alpha = 0.7f
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AnimatedButton(
+                isVisible = true,
+                onClick = { navController.navigate("text1") },
+                text = "Buton 2",
+                alpha = 0.7f
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AnimatedButton(
+                isVisible = true,
+                onClick = { navController.navigate("drone_info") },
+                text = "Vezi Drone",
+                alpha = 0.7f
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AnimatedButton(
+                isVisible = true,
+                onClick = { navController.navigate("set_destination") },
+                text = "Setează destinația dronei",
+                alpha = 0.7f
+            )
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = { navController.navigate("text1") }) {
-            Text("Buton 2")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = { navController.navigate("drone_info") }) {
-            Text("Vezi Drone")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = { navController.navigate("set_destination") }) {
-            Text("Setează destinația dronei")
+    }
+}
+
+@Composable
+fun AnimatedButton(isVisible: Boolean, onClick: () -> Unit, text: String, alpha: Float = 0.7f) {
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(durationMillis = 500)) + scaleIn(initialScale = 0.5f, animationSpec = tween(500)),
+        exit = fadeOut(animationSpec = tween(durationMillis = 500)) + scaleOut(targetScale = 0.5f, animationSpec = tween(500))
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0x00FFFF).copy(alpha = alpha) // Setează transparența doar pentru fundal
+            )
+        ) {
+            // Text complet opac
+            Text(text = text)
         }
     }
 }
 
 
+
 @Composable
 fun MapScreen(drones: List<Drone>, droneViewModel: DroneViewModel) {
-    val cameraPositionState = rememberCameraPositionState {
-        position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(LatLng(44.4268, 26.1025), 10f)
+    var scale by remember { mutableStateOf(0.5f) }
+    val animatedScale by animateFloatAsState(
+        targetValue = scale,
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing)
+    )
+
+    LaunchedEffect(Unit) {
+        scale = 1f
     }
 
-    GoogleMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer(scaleX = animatedScale, scaleY = animatedScale, alpha = animatedScale)
+            .animateContentSize()
     ) {
-        drones.forEach { drone ->
-            Marker(
-                state = MarkerState(position = drone.coordinates),
-                title = drone.name,
-                snippet = "Viteză: ${drone.speed} km/h"
-            )
+        val cameraPositionState = rememberCameraPositionState {
+            position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(LatLng(44.4268, 26.1025), 10f)
+        }
+
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState
+        ) {
+            drones.forEach { drone ->
+                Marker(
+                    state = MarkerState(position = drone.coordinates),
+                    title = drone.name,
+                    snippet = "Viteză: ${drone.speed} km/h"
+                )
+            }
         }
     }
 
@@ -125,6 +208,7 @@ fun MapScreen(drones: List<Drone>, droneViewModel: DroneViewModel) {
         }
     }
 }
+
 
 
 @Composable

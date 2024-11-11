@@ -65,7 +65,10 @@ class DroneViewModel : ViewModel() {
         }
     }
 
-    private fun updateDroneOnServer(updatedDrone: Drone) {
+
+    fun setDestination(drone: Drone, destination: LatLng) {
+        val updatedDrone = drone.copy(destination = destination)
+
         api.updateDrone(updatedDrone.id, updatedDrone).enqueue(object : Callback<Drone> {
             override fun onResponse(call: Call<Drone>, response: Response<Drone>) {
                 if (response.isSuccessful) {
@@ -81,52 +84,5 @@ class DroneViewModel : ViewModel() {
         })
     }
 
-    fun updateDronePosition(updatedDrone: Drone) {
-        _drones.value = _drones.value.map {
-            if (it.id == updatedDrone.id) updatedDrone else it
-        }
-    }
-
-    fun setDestination(drone: Drone, destination: LatLng) {
-        _drones.value = _drones.value.map {
-            if (it.id == drone.id) {
-                val updatedDrone = it.copy(destination = destination)
-                updatedDrone
-            } else {
-                it
-            }
-        }
-    }
-
-    private fun moveDrone(drone: Drone): Drone {
-        val destination = drone.destination ?: return drone
-
-        val currentPos = drone.coordinates
-        val distance = FloatArray(1)
-        android.location.Location.distanceBetween(
-            currentPos.latitude, currentPos.longitude,
-            destination.latitude, destination.longitude,
-            distance
-        )
-
-        if (distance[0] < 10) {
-            return drone.copy(destination = null)
-        } else {
-            val moveRatio = drone.speed / distance[0]
-            val newLat = currentPos.latitude + (destination.latitude - currentPos.latitude) * moveRatio
-            val newLng = currentPos.longitude + (destination.longitude - currentPos.longitude) * moveRatio
-            return drone.copy(coordinates = LatLng(newLat, newLng))
-        }
-    }
-
-    fun updateAllDrones() {
-        _drones.value = _drones.value.map { drone ->
-            val updatedDrone = moveDrone(drone)
-
-            updateDroneOnServer(updatedDrone)
-
-            updatedDrone
-        }
-    }
 }
 

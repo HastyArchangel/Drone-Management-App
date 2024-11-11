@@ -121,8 +121,7 @@ fun MapScreen(drones: List<Drone>, droneViewModel: DroneViewModel) {
         droneViewModel.fetchDrones()
         while (true) {
             delay(3000)
-            droneViewModel.updateAllDrones()
-            println("3s Debug check")
+            droneViewModel.fetchDrones()
         }
     }
 }
@@ -131,7 +130,7 @@ fun MapScreen(drones: List<Drone>, droneViewModel: DroneViewModel) {
 @Composable
 fun SetDestinationScreen(drones: List<Drone>, onSetDestination: (Drone, LatLng) -> Unit) {
     val selectedDrone = remember { mutableStateOf<Drone?>(null) }
-    val destination = remember { mutableStateOf(LatLng(45.4268, 26.1025)) }
+    val destination = remember { mutableStateOf(LatLng(42.4268, 26.1025)) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Selectează o dronă și setează destinația")

@@ -3,7 +3,6 @@ import math
 
 app = Flask(__name__)
 
-# Example data about drones
 drones = [
     {
         "id": "1",
@@ -34,7 +33,7 @@ drones = [
     }
 ]
 
-def move_drone(drone):
+def move_drone(drone):  
     if not drone["destination"]:
         return
 
@@ -46,7 +45,7 @@ def move_drone(drone):
         drone["destination"] = None
         return
 
-    move_ratio = drone["speed"] / distance * 0.00001  
+    move_ratio = drone["speed"] / distance * 0.0001  
     drone["coordinates"]["lat"] += (dest["lat"] - current["lat"]) * move_ratio
     drone["coordinates"]["lng"] += (dest["lng"] - current["lng"]) * move_ratio
 
@@ -73,17 +72,20 @@ def update_drone(drone_id):
 
     for key, value in data.items():
         if key == 'coordinates':
-            coordinates = data['coordinates']
-            drone['coordinates'] = {
-                'lat': coordinates.get('latitude', drone['coordinates'].get('lat')),
-                'lng': coordinates.get('longitude', drone['coordinates'].get('lng'))
-            }
+        #     coordinates = data['coordinates']
+        #     drone['coordinates'] = {
+        #         'lat': coordinates.get('latitude', drone['coordinates'].get('lat')),
+        #         'lng': coordinates.get('longitude', drone['coordinates'].get('lng'))
+        #     }
+        # elif key == 'destination':
+        #     destination = data['destination']
+        #     drone['destination'] = {
+        #         'lat': destination.get('latitude', drone['destination'].get('lat')),
+        #         'lng': destination.get('longitude', drone['destination'].get('lng'))
+        #     }
+            drone['coordinates'] = value
         elif key == 'destination':
-            destination = data['destination']
-            drone['destination'] = {
-                'lat': destination.get('latitude', drone['destination'].get('lat')),
-                'lng': destination.get('longitude', drone['destination'].get('lng'))
-            }
+            drone['destination'] = value
         elif key in drone:
             drone[key] = value
 

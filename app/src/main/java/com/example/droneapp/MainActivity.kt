@@ -45,11 +45,14 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
+import java.util.Locale
 
 
 class MainActivity : ComponentActivity() {
@@ -153,10 +156,9 @@ fun AnimatedButton(isVisible: Boolean, onClick: () -> Unit, text: String, alpha:
             modifier = Modifier
                 .fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0x00FFFF).copy(alpha = alpha) // Setează transparența doar pentru fundal
+                containerColor = Color(0x00FFFF).copy(alpha = alpha)
             )
         ) {
-            // Text complet opac
             Text(text = text)
         }
     }
@@ -214,28 +216,45 @@ fun MapScreen(drones: List<Drone>, droneViewModel: DroneViewModel) {
 @Composable
 fun SetDestinationScreen(drones: List<Drone>, onSetDestination: (Drone, LatLng) -> Unit) {
     val selectedDrone = remember { mutableStateOf<Drone?>(null) }
-    val destination = remember { mutableStateOf(LatLng(42.4268, 26.1025)) }
+    var destination by remember { mutableStateOf(LatLng(42.4268, 26.1025)) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Selectează o dronă și setează destinația")
+
         drones.forEach { drone ->
             Button(
                 onClick = { selectedDrone.value = drone },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
             ) {
                 Text("Selectează ${drone.name}")
-
             }
         }
 
         selectedDrone.value?.let { drone ->
             Text("Drona selectată: ${drone.name} (${drone.model})")
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val cameraPositionState = rememberCameraPositionState {
+                position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(destination, 10f)
+            }
+
+            GoogleMap(
+                modifier = Modifier.fillMaxSize().weight(1f),
+                cameraPositionState = cameraPositionState,
+                onMapClick = { latLng ->
+                    destination = latLng
+                }
+            ) {
+                Marker(
+                    state = MarkerState(position = destination),
+                    title = "Destinația selectată"
+                )
+            }
 
             Button(
                 onClick = {
-                    onSetDestination(drone, destination.value)
-                    println("onClick check: ${drone.name}, ${destination.value}")
+                    onSetDestination(drone, destination)
                 },
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
             ) {
@@ -244,6 +263,7 @@ fun SetDestinationScreen(drones: List<Drone>, onSetDestination: (Drone, LatLng) 
         }
     }
 }
+
 
 @Composable
 fun SimpleTextScreen(text: String) {
@@ -257,15 +277,43 @@ fun SimpleTextScreen(text: String) {
 
 @Composable
 fun DroneInfoScreen(drones: List<Drone>) {
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1E1E1E))
+            .padding(16.dp)
+    ) {
         drones.forEach { drone ->
-            Text("Nume: ${drone.name}")
-            Text("Model: ${drone.model}")
-            Text("Locație: ${drone.location}")
+            Text(
+                text = "Nume: ${drone.name}",
+                fontFamily = FontFamily.Monospace,
+                color = Color(0xFF00FF9D),
+                fontSize = 18.sp
+            )
+            Text(
+                text = "Model: ${drone.model}",
+                fontFamily = FontFamily.Monospace,
+                color = Color(0xFF00FF9D),
+                fontSize = 16.sp
+            )
+            Text(
+                text = "Locație: ${drone.location}",
+                fontFamily = FontFamily.Monospace,
+                color = Color(0xFF00FF9D),
+                fontSize = 16.sp
+            )
+            Text(
+                text = "Coordonate: ${String.format(Locale.US, "%.3f", drone.coordinates.latitude)}, " +
+                        String.format(Locale.US, "%.3f", drone.coordinates.longitude),
+                fontFamily = FontFamily.Monospace,
+                color = Color(0xFF00FF9D),
+                fontSize = 16.sp
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable

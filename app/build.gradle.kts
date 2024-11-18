@@ -8,12 +8,19 @@ android {
     namespace = "com.example.droneapp"
     compileSdk = 35
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.example.droneapp"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        val apiKey = project.findProperty("MAPS_API_KEY") as String? ?: "default_value"
+        buildConfigField("String", "MAPS_API_KEY", "\"$apiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

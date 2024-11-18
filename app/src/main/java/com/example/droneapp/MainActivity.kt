@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
 @Composable
 fun NavLogic() {
     val droneViewModel: DroneViewModel = viewModel()
@@ -87,6 +88,7 @@ fun NavLogic() {
         composable("drone_info") { DroneInfoScreen(drones = droneViewModel.drones.value) }
     }
 }
+
 
 @Composable
 fun ButtonScreen(navController: NavHostController) {
@@ -163,8 +165,6 @@ fun AnimatedButton(isVisible: Boolean, onClick: () -> Unit, text: String, alpha:
         }
     }
 }
-
-
 
 @Composable
 fun MapScreen(drones: List<Drone>, droneViewModel: DroneViewModel) {
@@ -303,8 +303,8 @@ fun DroneInfoScreen(drones: List<Drone>) {
                 fontSize = 16.sp
             )
             Text(
-                text = "Coordonate: ${String.format(Locale.US, "%.3f", drone.coordinates.latitude)}, " +
-                        String.format(Locale.US, "%.3f", drone.coordinates.longitude),
+                text = "Coordonate: ${String.format(Locale.US, "%.4f", drone.coordinates.latitude)}, " +
+                        String.format(Locale.US, "%.4f", drone.coordinates.longitude),
                 fontFamily = FontFamily.Monospace,
                 color = Color(0xFF00FF9D),
                 fontSize = 16.sp
